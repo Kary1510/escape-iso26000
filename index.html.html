@@ -1,0 +1,97 @@
+<script>
+/***********************
+ *  DATA MODEL
+ ***********************/
+const newId = (p)=> p + Math.random().toString(36).slice(2,8);
+const defaultGame = ()=>({
+  title: "Démo — L’Atelier Secret",
+  startSceneId: "s1",
+  vars: {},
+  scenes: [
+    {
+      id:"s1", name:"Atelier", background:"https://images.unsplash.com/photo-1545235617-9465d2a55698?q=80&w=1400&auto=format&fit=crop",
+      elements:[
+        {id:"t1", type:"text", x:24, y:24, w:260, h:30, text:"Bienvenue ! Trouve le code ou le mot secret.", color:"#ffffff", fontSize:18},
+        {id:"l1", type:"lock", x:60, y:320, w:140, h:60, code:"2413", setVar:"clef_ok", success:"La serrure s’ouvre…", fail:"Non, pas ce code."},
+        {id:"w1", type:"wordlock", x:260, y:320, w:140, h:60, word:"escape", setVar:"mot_ok", success:"Mot correct !", fail:"Mauvais mot."},
+        {id:"h1", type:"hotspot", x:540, y:260, w:140, h:100, target:"s2", require:"mot_ok", alt:"Passer la porte"}
+      ]
+    },
+    {
+      id:"s2", name:"Boutique", background:"https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=1400&auto=format&fit=crop",
+      elements:[
+        {id:"t2", type:"text", x:24, y:24, w:360, h:30, text:"Bravo ! Tu es sorti 🎉", color:"#ffffff", fontSize:22}
+      ]
+    }
+  ]
+});
+
+let game = defaultGame();
+let state = { selectedSceneId: game.startSceneId, selectedElId: null };
+
+/***********************
+ *  UTIL
+ ***********************/
+const $ = (sel, root=document)=> root.querySelector(sel);
+const $$ = (sel, root=document)=> [...root.querySelectorAll(sel)];
+const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
+const download = (filename, text)=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+  a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+const confirmDel = (msg)=> window.confirm(msg);
+
+/***********************
+ *  EDITOR RENDER
+ ***********************/
+const sceneList = $("#scene-list");
+const elementList = $("#element-list");
+const canvas = $("#canvas");
+const startSceneSel = $("#start-scene");
+const gameTitle = $("#game-title");
+const sceneName = $("#scene-name");
+const sceneBg = $("#scene-bg");
+const toggleGrid = $("#toggle-grid");
+
+function currentScene(){ return game.scenes.find(s=>s.id===state.selectedSceneId); }
+function currentElement(){ const s=currentScene(); return s?.elements.find(e=>e.id===state.selectedElId); }
+
+function renderSidebar(){
+  // scenes
+  sceneList.innerHTML="";
+  game.scenes.forEach(s=>{
+    const div=document.createElement('div');
+    div.className="item"+(s.id===state.selectedSceneId?" active":"");
+    div.innerHTML=`<span class="pill">#${s.id}</span><div style="font-weight:600">${s.name||"(sans nom)"}</div>`;
+    div.onclick=()=>{ state.selectedSceneId=s.id; state.selectedElId=null; renderAll(); };
+    sceneList.appendChild(div);
+  });
+  // start scene selector
+  startSceneSel.innerHTML="";
+  game.scenes.forEach(s=>{
+    const o=document.createElement('option'); o.value=s.id; o.textContent=s.name||s.id;
+    if(game.startSceneId===s.id) o.selected=true;
+    startSceneSel.appendChild(o);
+  });
+  // elements
+  elementList.innerHTML="";
+  const s=currentScene(); if(!s) return;
+  s.elements.forEach(el=>{
+    const div=document.createElement('div');
+    div.className="item small"+(el.id===state.selectedElId?" active":"");
+    const icon = el.type==="hotspot"?"🟩":el.type==="lock"?"🔒":el.type==="wordlock"?"🔑":"📝";
+    div.innerHTML=`<span>${icon}</span><code>${el.id}</code> <span>${el.type}</span>`;
+    div.onclick=()=>{ state.selectedElId=el.id; selectOnCanvas(el.id); renderProps(); };
+    elementList.appendChild(div);
+  });
+}
+
+function renderSceneForm(){
+  const s=currentScene(); if(!s) return;
+  gameTitle.value = game.title || "";
+  sceneName.value = s.name || "";
+  sceneBg.value = s.background || "";
+  canvas.style.backgroundImage = s.background ? `url('${s.background}')` : 'none';
+  canvas.classList.toggle('grid', toggleGrid.checked);
+}

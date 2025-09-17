@@ -1,0 +1,41 @@
+{
+  "title": "Mission ISO 26000",
+  "startSceneId": "s1",
+  "vars": {},
+  "scenes": [
+    {
+      "id": "s1",
+      "name": "Bureau",
+      "background": "https://images.unsplash.com/photo-1581092334390-89a2b56c1c8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      "elements": [
+        { "id": "t1", "type": "text", "x": 20, "y": 20, "w": 500, "h": 40, "text": "Combien de sujets traite la norme ISO 26000 ?", "color": "#ffffff", "fontSize": 20 },
+        { "id": "l1", "type": "lock", "x": 200, "y": 300, "w": 160, "h": 60, "code": "7", "setVar": "verrou_ok", "success": "Bravo ! Il y a 7 sujets au total.", "fail": "Non, essaie encore." }
+      ]
+    },
+    {
+      "id": "s2",
+      "name": "Bibliothèque",
+      "background": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      "elements": [
+        { "id": "t2", "type": "text", "x": 20, "y": 20, "w": 500, "h": 40, "text": "Quel est le premier principe de l’ISO 26000 ?", "color": "#ffffff", "fontSize": 20 },
+        { "id": "w1", "type": "wordlock", "x": 200, "y": 300, "w": 200, "h": 60, "word": "responsabilité", "setVar": "mot_ok", "success": "Correct !", "fail": "Non, cherche mieux." }
+      ]
+    },
+    {
+      "id": "s3",
+      "name": "Salle de réunion",
+      "background": "https://images.unsplash.com/photo-1581093588401-6a6a48150862?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      "elements": [
+        { "id": "h1", "type": "hotspot", "x": 300, "y": 250, "w": 200, "h": 120, "target": "s4", "require": "verrou_ok,mot_ok", "alt": "Ouvrir la porte" }
+      ]
+    },
+    {
+      "id": "s4",
+      "name": "Victoire",
+      "background": "https://images.unsplash.com/photo-1535378917042-10a22c95931a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      "elements": [
+        { "id": "t3", "type": "text", "x": 40, "y": 40, "w": 500, "h": 40, "text": "Bravo 🎉 Tu as validé la mission ISO 26000 !", "color": "#ffffff", "fontSize": 24 }
+      ]
+    }
+  ]
+}

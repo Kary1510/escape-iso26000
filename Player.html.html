@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Mission ISO 26000 — Jouer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{margin:0;background:#0d1020;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+    .scene{flex:1;width:100%;background-size:cover;background-position:center;position:relative}
+    .hotspot,.lock{position:absolute;border:none;background:transparent;outline:2px dashed #20c99799;border-radius:6px;cursor:pointer}
+    .lock{outline-color:#ffcc0099}
+    .text{position:absolute;color:#fff;text-shadow:0 2px 4px #0008;font-size:16px}
+    .bar{display:flex;gap:10px;padding:10px;background:#111;width:100%;justify-content:space-between}
+    .pill{padding:4px 8px;background:#222;border-radius:8px;font-size:12px}
+    .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:10}
+    .card{background:#131735;padding:20px;border-radius:12px;max-width:300px;width:90%;color:#fff}
+    input{width:100%;padding:8px;margin-top:10px;border-radius:6px;border:none}
+    button{margin-top:10px;padding:8px 12px;border-radius:6px;border:none;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div id="sceneRoot" class="scene"></div>
+  <div class="bar">
+    <div id="vars"></div>
+    <button onclick="restart()">🔄 Recommencer</button>
+  </div>
+
+  <!-- MODAL LOCK -->
+  <div class="modal" id="modal">
+    <div class="card">
+      <h3>Entrer le code</h3>
+      <input id="modal-code" placeholder="Code…" />
+      <button onclick="checkLock()">Valider</button>
+      <button onclick="closeModal()">Annuler</button>
+      <div id="modal-msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL WORDLOCK -->
+  <div class="modal" id="modal-word">
+    <div class="card">
+      <h3>Entrer le mot de passe</h3>
+      <input id="modal-word-input" placeholder="Mot…" />
+      <button onclick="checkWord()">Valider</button>
+      <button onclick="closeWord()">Annuler</button>
+      <div id="modal-word-msg"></div>
+    </div>
+  </div>
+
+  <script>
+  let game=null, play=null, pendingLock=null, pendingWord=null;
+
+  async function loadGame(){
+    const res=await fetch("iso26000.json");
+    game=await res.json();
+    restart();
+  }
+
+  function restart(){
+    play={vars:{},current:game.startSceneId};
+    renderScene(); renderVars();
+  }
+
+  function renderScene(){
+    const s=game.scenes.find(x=>x.id===play.current);
+    const root=document.getElementById("sceneRoot");
+    root.innerHTML=""; root.style.backgroundImage=s.background?`url(${s.background})`:"none";
+    s.elements.forEach(el=>{
+      if(el.type==="hotspot"){
+        if(el.require && !el.require.split(",").every(r=>play.vars[r])) return;
+        const b=document.createElement("button");
+        b.className="hotspot"; b.style=`left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px`;
+        b.onclick=()=>{ play.current=el.target; renderScene(); };
+        root.appendChild(b);
+      }
+      if(el.type==="lock"){
+        const b=document.createElement("button");
+        b.className="lock"; b.style=`left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px`;
+        b.onclick=()=>{ pendingLock=el; document.getElementById("modal").style.display="flex"; };
+        root.appendChild(b);
+      }
+      if(el.type==="wordlock"){
+        const b=document.createElement("button");
+        b.className="lock"; b.style=`left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px`;
+        b.onclick=()=>{ pendingWord=el; document.getElementById("modal-word").style.display="flex"; };
+        root.appendChild(b);
+      }
+      if(el.type==="text"){
+        const t=document.createElement("div");
+        t.className="text"; t.style=`left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;font-size:${el.fontSize||16}px;color:${el.color||"#fff"}`;
+        t.textContent=el.text||""; root.appendChild(t);
+      }
+    });
+  }
+
+  function renderVars(){
+    const box=document.getElementById("vars"); box.innerHTML="";
+    for(const [k,v] of Object.entries(play.vars)){
+      const span=document.createElement("span"); span.className="pill"; span.textContent=`${k}: ${v}`;
+      box.appendChild(span);
+    }
+  }
+
+  function checkLock(){
+    const code=document.getElementById("modal-code").value.trim();
+    if(code===pendingLock.code){
+      if(pendingLock.setVar) play.vars[pendingLock.setVar]=true;
+      renderVars(); renderScene();
+      document.getElementById("modal-msg").textContent=pendingLock.success||"Correct !";
+      setTimeout(closeModal,700);
+    } else {
+      document.getElementById("modal-msg").textContent=pendingLock.fail||"Raté.";
+    }
+  }
+  function closeModal(){ document.getElementById("modal").style.display="none"; pendingLock=null; }
+
+  function checkWord(){
+    const word=document.getElementById("modal-word-input").value.trim().toLowerCase();
+    if(word===pendingWord.word.toLowerCase()){
+      if(pendingWord.setVar) play.vars[pendingWord.setVar]=true;
+      renderVars(); renderScene();
+      document.getElementById("modal-word-msg").textContent=pendingWord.success||"Correct !";
+      setTimeout(closeWord,700);
+    } else {
+      document.getElementById("modal-word-msg").textContent=pendingWord.fail||"Raté.";
+    }
+  }
+  function closeWord(){ document.getElementById("modal-word").style.display="none"; pendingWord=null; }
+
+  loadGame();
+  </script>
+</body>
+</html>
